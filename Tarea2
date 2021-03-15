@@ -1,0 +1,37 @@
+--Tarea 2:
+--Cómo obtenemos todos los nombres y correos de nuestros clientes canadienses para una campaña?
+select concat(c.first_name, ' ', c.last_name) as Nombre, c.email 
+from customer c join address a using (address_id)
+join city c2 using (city_id)
+join country c3 using (country_id)
+where c3.country = 'Canada'
+
+--Qué cliente ha rentado más de nuestra sección de adultos?
+select c.customer_id, concat(c.first_name, ' ',c.last_name) as Nombre, count(f.film_id) as PeliculasR 
+from customer c join rental r using (customer_id)
+join inventory i using (inventory_id)
+join film f using (film_id)
+where f.rating = 'NC-17'
+group by c.customer_id 
+order by PeliculasR desc 
+limit 2 --Aquí tomé limit 2 porque previamente revisé y hay dos personas con el número máximo de películas NC-17 rentadas
+
+--Qué películas son las más rentadas en todas nuestras stores?
+select distinct on (s.store_id) s.store_id, f.title , count(r.rental_id) as RentalTimes from store s
+join inventory i using (store_id)
+join rental r using (inventory_id)
+join film f using (film_id)
+group by  f.title, s.store_id 
+order by s.store_id, RentalTimes desc
+
+--Cuál es nuestro revenue por store?
+select s.store_id, sum(p.amount) as Revenue from store s
+join inventory i using (store_id)
+join rental r using (inventory_id)
+join payment p using (rental_id)
+group by s.store_id
+
+select s.store_id, sum(p.amount) as Revenue from store s
+join staff s2 using (store_id)
+join payment p using (staff_id)
+group by s.store_id 
