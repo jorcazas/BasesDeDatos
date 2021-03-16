@@ -1,3 +1,14 @@
+Usando la BD de Sakila, y en un script de SQL separado, y en su propio repo de Github, escribir los queries necesarios y suficientes para dar respuesta a las siguientes preguntas:
+
+Cómo obtenemos todos los nombres y correos de nuestros clientes canadienses para una campaña?
+Qué cliente ha rentado más de nuestra sección de adultos?
+Qué películas son las más rentadas en todas nuestras stores?
+Cuál es nuestro revenue por store?
+Timestamp límite de entrega: Lunes 15 de Marzo, a las 23:59:59
+
+Valor: 0.5 puntos sobre el final
+
+
 --Tarea 2:
 --Cómo obtenemos todos los nombres y correos de nuestros clientes canadienses para una campaña?
 select concat(c.first_name, ' ', c.last_name) as Nombre, c.email 
