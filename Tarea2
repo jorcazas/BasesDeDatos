@@ -42,7 +42,3 @@ join rental r using (inventory_id)
 join payment p using (rental_id)
 group by s.store_id
 
-select s.store_id, sum(p.amount) as Revenue from store s
-join staff s2 using (store_id)
-join payment p using (staff_id)
-group by s.store_id 
