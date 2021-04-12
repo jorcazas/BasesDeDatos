@@ -1,0 +1,81 @@
+/* Tarea 2: Parte de la infraestructura es diseñar contenedores cilíndricos giratorios para facilitar la colocación y extracción 
+de discos por brazos automatizados. Cada cajita de Blu-Ray mide 20cm x 13.5cm x 1.5cm, y para que el brazo pueda manipular 
+adecuadamente cada cajita, debe estar contenida dentro de un arnés que cambia las medidas a 30cm x 21cm x 8cm para 
+un espacio total de 5040 centímetros cúbicos y un peso de 500 gr por película.
+
+Se nos ha encargado formular la medida de dichos cilindros de manera tal que quepan todas las copias de los Blu-Rays 
+de cada uno de nuestros stores. Las medidas deben ser estándar, es decir, la misma para todas nuestras stores, 
+y en cada store pueden ser instalados más de 1 de estos cilindros. Cada cilindro aguanta un peso máximo de 50kg como máximo. 
+El volúmen de un cilindro se calcula de [ésta forma.](volume of a cylinder)
+
+Esto no se resuelve con 1 solo query. El problema se debe partir en varios cachos y deben resolver cada uno con SQL.
+
+La información que no esté dada por el enunciado del problema o el contenido de la BD, 
+podrá ser establecida como supuestos o assumptions, pero deben ser razonables para el problem domain que estamos tratando.
+*/
+
+--SOLUCIÓN:
+
+--Primero, debemos saber cuántas películas hay en cada store:
+
+--Con este query sacamos el total de películas (idependientemente de su título) que hay en cada store,
+--pues contamos cada uno de los inventory_id de cada store:
+with pelisXtienda as (select s.store_id, i.inventory_id from store s join inventory i using (store_id) join film f using (film_id)
+	group by s.store_id, i.inventory_id 
+	order by s.store_id)
+select store_id, count(*) as num_peliculas from pelisXtienda group by store_id;
+
+--Después, debemos saber cuántas películas puede soportar cada cilindro, entonces:
+--Primero, sabemos que cada película tendrá un peso de 500g dentro de la estructura del cilindro, y cada cilindro soporta a lo más 50kg
+
+--Entonces, multiplicamos el número total de películas por 500g para saber el peso total de todas las películas, luego dividimos ese
+--resultado entre 50000g para saber cuántos cilindros serán necesarios para meter todas las películas.
+
+with total_peliculasXtienda as ( --usamos el query anterior para tener la información de cuántas películas hay en cada store de manera dinámica
+	with pelisXtienda as (select s.store_id, i.inventory_id from store s join inventory i using (store_id) join film f using (film_id)
+		group by s.store_id, i.inventory_id 
+		order by s.store_id)
+	select store_id, count(*) as num_peliculas from pelisXtienda group by store_id)
+select store_id, ceil((num_peliculas*500) :: numeric / 50000 :: numeric) as num_cilindrosXtienda,--Tomamos el ceil para poder almacenar todas las películas, aunque haya un cilindro sin llenar.
+num_peliculas
+from total_peliculasXtienda 
+group by store_id, num_peliculas
+order by store_id;
+
+--Una vez obtenido el número de cilindros necesarios para aguantar el total de películas por tienda, vamos a calcular su volumen:
+--Primero, sabemos que cada cilindro puede tener hasta 100 películas de 500g, por lo tanto, podemos estandarizar los cilindros para que 
+--cada uno de ellos soporte 100 películas tanto por peso como por volumen:
+
+--Sabemos que cada película tiene un volumen de 5040cm^3:
+select 5040*100 as vol_min_necesarioXcilindro; --Este es el volúmen mínimo necesario para que quepan 100 películas
+
+/*La idea es que el cilindro pueda incluir un número x de películas formando un abanico abierto en la base, y luego que se puedan poner 
+otras x películas encima de la misma manera, así hasta llenarlo*/
+
+/*Cada película, vista desde arriba, ocupa un área rectangular de 21cmx8cm = 168cm^2
+Si las acomodamos formando un abanico, y que entre cada película haya un ángulo de 30 grados, 
+entonces podremos acomodar 12 películas en cada nivel (como si de las horas de un reloj se tratara)
+El área mínima de la base necesaria para esto es de 168cm^2x12 = 2016cm^2; sin embargo, para un área circular, es necesaria un área mucho mayor porque tenemos
+que tomar en cuenta el espacio entre cada película, al igual que el espacio en el centro.
+Supongamos que ponemos un centro de 21cm de diámetro para que quepan las 12 pelíulas en la base con un ángulo de 30 grados entre sí.
+Entonces, terminamos con una base circular de 63cm de diámetro, en la que caben perfectamente 12 películas de la forma deseada:
+*/
+select pi()*power(63::numeric/2::numeric, 2) as area_base;
+
+--Una vez establecida el área ciruclar necesaria para guardar 12 películas en un nivel, necesitamos saber cuántos niveles tendrá el cilindro:
+select ceil(100::numeric/12::numeric) as num_niveles;--Este es el número de niveles necesarios por cilindro
+
+--Sabiendo que las películas tienen una altura de 30cm:
+select 30*9 as altura_min_cilindro; --Es la altura mínima del cilindro para que le quepan 9 niveles.
+
+--Por lo tanto, tenemos un cilindro estandarizado de la siguiente manera:
+select 63 as "diametro_base", pi()*power(63::numeric/2::numeric, 2) as "area_base", 30*9 as "altura_min_cilindro";
+
+with medidas_cilindro as(
+	select 63 as "diametro_base", pi()*power(63::numeric/2::numeric, 2) as "area_base", 30*9 as "altura_min_cilindro")
+select area_base*altura_min_cilindro as "vol_total_cilindro" from medidas_cilindro;
+--Observemos que el volumen del cilindro, con estas medidas, es menor al volumen necesario para guardar 100 películas (504000 cm^2).
+
+--Por lo tanto, vemos que el cilindro cumple con las dos condiciones necesarias: soporta el peso de 100 películas y tiene el volumen suficiente para almacenarlas dentro.
+
+
