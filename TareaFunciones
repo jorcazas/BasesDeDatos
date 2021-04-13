@@ -238,7 +238,7 @@ order by store_id;
 --Para terminar, vemos que el cilindro cumple con las dos condiciones necesarias: tiene el volumen suficiente para almacenar 96 películas dentro y tiene que soportar menos de 50kg.
 
 /*
- * CONCLUSIÓN: es necesario construir un total de 49 cilindros iguales que soporten 50kg, con 8 niveles que permitan guardar 12 pelíulas
+ * CONCLUSIÓN: es necesario construir un total de 49 cilindros iguales que soporten 50kg, con 8 niveles que permitan guardar 12 pelíulas en cada nivel
  * en forma de abanico separadas cada una por 30grados. 24 serán asignados para el inventario de la tienda 1 y 25 para el inventario de la tienda 2.
  * Las medidas de un cilindro serán las siguientes: base circular de 63cm de diámetro y altura de 240cm.
  * 
