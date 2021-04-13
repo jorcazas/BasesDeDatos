@@ -1,3 +1,156 @@
+/*
+Tarea 1 Funciones: 
+
+Una aplicación frecuente de Ciencia de Datos aplicada a la industria del microlending es el de 
+calificaciones crediticias (credit scoring). Puede interpretarse de muchas formas: propensión a pago, probabilidad de default, etc. 
+La intuición nos dice que las variables más importantes son el saldo o monto del crédito, y la puntualidad del pago; 
+sin embargo, otra variable que frecuentemente escapa a los analistas es el tiempo entre cada pago. 
+La puntualidad es una pésima variable para anticipar default o inferir capacidad de pago de micropréstamos, por su misma naturaleza. 
+Si deseamos examinar la viabilidad de un producto de crédito para nuestras videorental stores:
+
+Cuál es el promedio, en formato human-readable, de tiempo entre cada pago por cliente de la BD Sakila?
+Sigue una distribución normal?
+Qué tanto difiere ese promedio del tiempo entre rentas por cliente?
+Fecha de entrega: Viernes 9 de Abril, antes de las 23:59:59 Valor: 1 puntos sobre el final Medio de entrega: su propio repositorio de Github
+*/
+
+-- 1. ¿Cuál es el promedio, en formato human-readable, de tiempo entre cada pago por cliente de la BD Sakila?
+with promedio as(
+	with hist as (
+		select p.payment_date as fecha, p.payment_id as id from payment p
+	),
+	clientes as(
+		select p.customer_id, sum(age(hist.fecha, p.payment_date)) as suma, count(p.payment_id) as N 
+		from payment p join hist on (p.payment_id = hist.id-1)
+		where age(hist.fecha, p.payment_date)>'00:00'::interval
+		group by p.customer_id 
+	)
+	select c.customer_id as "id_cliente", (clientes.suma/clientes.N) as "promedio_entre_pagos"
+	from payment pay join clientes on (pay.customer_id = clientes.customer_id)
+	join customer c on (clientes.customer_id = c.customer_id)
+	group by c.customer_id,(clientes.suma/clientes.N)
+	order by c.customer_id asc
+)
+select c.first_name || ' ' ||c.last_name as "Cliente", promedio.promedio_entre_pagos from promedio join customer c on (id_cliente = c.customer_id);
+
+-- 2. ¿Sigue una distribución normal?
+
+--Primero, sacamos la media y la desviación de la distribución:
+
+create view mediaDesviacion as (with e1 as (with hist as (
+	select p.payment_date as fecha, p.payment_id as id from payment p
+),clientes as(
+	select p.customer_id, sum(age(hist.fecha, p.payment_date)) as suma, count(p.payment_id) as N 
+	from payment p join hist on (p.payment_id = hist.id-1)
+	where age(hist.fecha, p.payment_date)>'00:00'::interval
+	group by p.customer_id 
+) 
+select c.customer_id as "id_cliente", (clientes.suma/clientes.N) as "promedio_entre_pagos"
+from payment pay join clientes on (pay.customer_id = clientes.customer_id)
+join customer c on (clientes.customer_id = c.customer_id)
+group by c.customer_id,(clientes.suma/clientes.N)
+order by c.customer_id asc),
+prom as (
+	select avg(e1."promedio_entre_pagos") as "media" from e1
+),
+estdevArg as(
+	select sum(power((extract(epoch from (select e1."promedio_entre_pagos"-prom."media")))::int,2)) as den,
+	count(e1."promedio_entre_pagos") as N
+	from e1, prom
+),
+estDev as (
+	select sqrt(estdevArg.den/estdevArg.N) as estdev from estdevArg	
+)
+select estDev.estdev as "s",extract(epoch from prom."media") as "m" from estDev,prom);
+
+--Revisamos si cumple la regla 68-95-99.7 o regla empírica
+select seg, div((w.num*100),599) from
+	(select t.segmento seg, t.num_customers num 
+		from 
+			(select parametros.segmento, count(*) num_customers
+				from
+					(with hist as (
+						select p.payment_date as fecha, p.payment_id as id from payment p
+					),
+					clientes as(
+						select p.customer_id, sum(age(hist.fecha, p.payment_date)) as suma, count(p.payment_id) as N 
+						from payment p join hist on (p.payment_id = hist.id-1)
+						where age(hist.fecha, p.payment_date)>'00:00'::interval
+						group by p.customer_id 
+					)
+					select c.customer_id as id, (clientes.suma/clientes.N) as tot_payments
+					from payment pay join clientes on (pay.customer_id = clientes.customer_id)
+					join customer c on (clientes.customer_id = c.customer_id)
+					group by c.customer_id,(clientes.suma/clientes.N)
+					order by c.customer_id asc) as pagos join 
+					(select '+-3' segmento, (mediaDesviacion."m"-3*mediaDesviacion."s") as limite_inferior, (mediaDesviacion."m"+3*mediaDesviacion."s") as limite_superior from mediaDesviacion
+					union all select '+-2' segmento, (mediaDesviacion."m"-2*mediaDesviacion."s") as limite_inferior, (mediaDesviacion."m"+2*mediaDesviacion."s") as limite_superior from mediaDesviacion
+					union all select '+-1' segmento, (mediaDesviacion."m"-1*mediaDesviacion."s") as limite_inferior, (mediaDesviacion."m"+1*mediaDesviacion."s") as limite_superior from mediaDesviacion) as parametros
+					on (extract(epoch from pagos.tot_payments) between parametros.limite_inferior and parametros.limite_superior)
+					group by parametros.segmento) as t) as w order by seg asc;
+
+--Como la regla no se cumple, podemos concluir que no sigue una distribución normal
+
+-- 3. ¿Qué tanto difiere ese promedio del tiempo entre rentas por cliente?
+
+--Sacamos el promedio de tiempo entre rentas por cliente
+with promedioRentas as(
+	with hist as (
+		select r.rental_date as fecha, r.rental_id as id from rental r
+	),
+	clientes as(
+		select r.customer_id, sum(age(hist.fecha, r.rental_date)) as suma, count(r.rental_id) as N 
+		from rental r join hist on (r.rental_id = hist.id-1)
+		where age(hist.fecha, r.rental_date)>'00:00'::interval
+		group by r.customer_id 
+	)
+	select c.customer_id as "id_cliente", (clientes.suma/clientes.N) as "promedio_entre_rentas"
+	from rental r2 join clientes on (r2.customer_id = clientes.customer_id)
+	join customer c on (clientes.customer_id = c.customer_id)
+	group by c.customer_id,(clientes.suma/clientes.N)
+	order by c.customer_id asc
+)
+select c.first_name || ' ' ||c.last_name as "Cliente", promedioRentas.promedio_entre_rentas from promedioRentas join customer c on (id_cliente = c.customer_id);
+
+--Ahora sólo restamos renglón a renglón la tabla de promedio entre pagos con la de promedio entre rentas:
+with promedio as(
+	with hist as (
+		select p.payment_date as fecha, p.payment_id as id from payment p
+	),
+	clientes as(
+		select p.customer_id, sum(age(hist.fecha, p.payment_date)) as suma, count(p.payment_id) as N 
+		from payment p join hist on (p.payment_id = hist.id-1)
+		where age(hist.fecha, p.payment_date)>'00:00'::interval
+		group by p.customer_id 
+	)
+	select c.customer_id as "id_cliente", (clientes.suma/clientes.N) as "promedio_entre_pagos"
+	from payment pay join clientes on (pay.customer_id = clientes.customer_id)
+	join customer c on (clientes.customer_id = c.customer_id)
+	group by c.customer_id,(clientes.suma/clientes.N)
+	order by c.customer_id asc
+), promedioRentas as(
+	with hist as (
+		select r.rental_date as fecha, r.rental_id as id from rental r
+	),
+	clientes as(
+		select r.customer_id, sum(age(hist.fecha, r.rental_date)) as suma, count(r.rental_id) as N 
+		from rental r join hist on (r.rental_id = hist.id-1)
+		where age(hist.fecha, r.rental_date)>'00:00'::interval
+		group by r.customer_id 
+	)
+	select c.customer_id as "id_cliente", (clientes.suma/clientes.N) as "promedio_entre_rentas"
+	from rental r2 join clientes on (r2.customer_id = clientes.customer_id)
+	join customer c on (clientes.customer_id = c.customer_id)
+	group by c.customer_id,(clientes.suma/clientes.N)
+	order by c.customer_id asc
+)
+select c.first_name || ' ' ||c.last_name as "Cliente", 
+(promedio.promedio_entre_pagos - promedioRentas.promedio_entre_rentas) as diferencia 
+from promedio join promedioRentas using (id_cliente)
+join customer c on (id_cliente = c.customer_id);
+
+--Observamos que hay bastante diferencia entre ambos promedios, pues el promedio de tiempo entre rentas es muy pequeño a comparación del promedio de tiempo entre pagos.
+
 
 /* Tarea 2: Parte de la infraestructura es diseñar contenedores cilíndricos giratorios para facilitar la colocación y extracción 
 de discos por brazos automatizados. Cada cajita de Blu-Ray mide 20cm x 13.5cm x 1.5cm, y para que el brazo pueda manipular 
