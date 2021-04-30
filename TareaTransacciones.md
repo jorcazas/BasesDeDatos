@@ -1,6 +1,6 @@
 # Tarea
 
-##Instrucciones
+## Instrucciones
 Cuando uds compran instrumentos financieros en mercados regulados, como acciones, papel de deuda guber, divisas, metales, futuros, commodities, etc 
   la instrucción que giran ustedes a su institución financiera se conoce como "postura de compra". Para que su compra se de, alguien tiene que poner 
   una postura de venta con las características suficientemente similares para poder hacerle MATCH.
@@ -9,7 +9,7 @@ El mercado es como un tanque gigante de posturas de compra y posturas de venta y
 
 Una vez que hay un match, entonces esa orden pasa a ejecución, pero no pasa inmediatamente. Si pasara inmediatamente, tendríamos algo como esto:
 
-###pseudocódigo
+### pseudocódigo
 start transaction;
 ejecutar orden mercado capitales de Julieta;
 commit;
@@ -73,6 +73,9 @@ Sebas Dulong con cuenta en Citi vende a Javier Orcazas 1200 títulos de GME (Gam
 DJ Delgado con cuenta en Scotia vende 20000 USD a un exchange rate de 25.2 MXN y 300 títulos de deuda corporativa a un precio de 40032.71 a Frida Kaori 
   con cuenta en Inbursa pagaderos enteramente con cash.
   
+## Solución
+
+
   
   
   
