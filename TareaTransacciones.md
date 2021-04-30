@@ -90,8 +90,9 @@ transferir_efectivo(origen, destino, monto)
 if error then para verificar errores  
 if success then para verificar éxito  
 
-  
-  
+1. Ulises con cuenta en GBM compra a Julieta con cuenta en Santander 400 títulos de AMZ (Amazon) a 66048.20 MXM pagaderos con cash.
+
+
   
   
   
