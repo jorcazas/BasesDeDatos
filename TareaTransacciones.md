@@ -10,37 +10,38 @@ El mercado es como un tanque gigante de posturas de compra y posturas de venta y
 Una vez que hay un match, entonces esa orden pasa a ejecución, pero no pasa inmediatamente. Si pasara inmediatamente, tendríamos algo como esto:
 
 ### pseudocódigo
-start transaction;
-ejecutar orden mercado capitales de Julieta;
-commit;
-start transaction;
-ejecutar orden mercado divisas de Javier;
-commit;
-start transaction;
-ejecutar orden mercado deuda de Sebas 1;
-commit;
-start transaction;
-ejecutar orden mercado deuda de Sebas 2;
-commit;
-Y sabemos que esto no es muy eficiente.
+start transaction;  
+ejecutar orden mercado capitales de Julieta;  
+commit;  
+start transaction;  
+ejecutar orden mercado divisas de Javier;  
+commit;  
+start transaction;  
+ejecutar orden mercado deuda de Sebas 1;  
+commit;  
+start transaction;  
+ejecutar orden mercado deuda de Sebas 2;  
+commit;  
+Y sabemos que esto no es muy eficiente.  
 
 Es más eficiente tener:
 
-start transaction;
-ejecutar orden mercado capitales 1;
-ejecutar orden mercado capitales 2;
-ejecutar orden mercado capitales 3;
-commit;
-start transaction;
-ejecutar orden mercado deuda 1;
-ejecutar orden mercado deuda 2;
-ejecutar orden mercado deuda 3;
-ejecutar orden mercado deuda 4;
-commit;
-start transaction;
-ejecutar orden mercado divisas 1;
-ejecutar orden mercado divisas 2;
-commit;
+start transaction;  
+ejecutar orden mercado capitales 1;  
+ejecutar orden mercado capitales 2;  
+ejecutar orden mercado capitales 3;  
+commit;  
+start transaction;  
+ejecutar orden mercado deuda 1;  
+ejecutar orden mercado deuda 2;  
+ejecutar orden mercado deuda 3;  
+ejecutar orden mercado deuda 4;  
+commit;  
+start transaction;  
+ejecutar orden mercado divisas 1;  
+ejecutar orden mercado divisas 2;  
+commit;  
+
 Aún cuando dicha ejecución de ordenes esté fuera de nuestra BD
 
 No solamente eso, sino que toda transacción de instrumentos financieros debe ir acompañado de cash. Tu institución financiera entrega 
